@@ -204,16 +204,76 @@ for i = 1:length(time)
     unbalanced_force_ecc = eccentric_mass * eccentric_distance * omega^2 * cos(theta_curr);
     unbalanced_force(theta_idx) = unbalanced_force_rec + unbalanced_force_ecc;
    
-    % Compute speed without flywheel
-    speed_no_flywheel(i) = omega * (1 + cos_theta / r_cr);
+  
+%% Engine parameters
+bore = 0.08; % Bore (m)
+stroke = 0.09; % Stroke (m)
+conn_rod_len = 0.14; % Connecting rod length (m)
+rpm = 2000; % Engine speed (rpm)
+mass_rec = 0.5; % Reciprocating mass (kg)
+mass_rot = 2.5; % Rotating mass (kg)
+radius = stroke / 2; % Crank radius (m)
+n_cycles = 10; % Number of cycles to simulate
+
+%% Flywheel parameters
+flywheel_inertia = 0.05; % Flywheel moment of inertia (kg-m^2)
+eccentric_mass = 0.02; % Eccentric mass (kg)
+eccentric_distance = 0.01; % Distance of eccentric mass from center (m)
+
+%% Simulation parameters
+t_step = 0.0001; % Time step (s)
+theta_step = 2 * pi / 1000; % Crank angle step (rad)
+time = 0:t_step:(n_cycles * 2 * pi / (rpm / 60)); % Time array
+
+%% Compute engine constants
+V_disp = pi * bore^2 * stroke / 4; % Displaced volume (m^3)
+r_cr = conn_rod_len / radius; % Connecting rod ratio
+omega = rpm * 2 * pi / 60; % Angular velocity (rad/s)
+
+%% Initialize arrays
+theta = 0:theta_step:(2 * pi * n_cycles); % Crank angle array
+speed_no_flywheel = zeros(size(time)); % Speed without flywheel
+speed_with_flywheel = zeros(size(time)); % Speed with flywheel
+unbalanced_force = zeros(size(theta)); % Unbalanced force
+
+%% Compute unbalanced force and speed fluctuation
+for i = 1:length(time)
+    theta_idx = mod(floor(time(i) * omega / theta_step), length(theta)) + 1;
+    theta_curr = theta(theta_idx);
+    sin_theta = sin(theta_curr);
+    cos_theta = cos(theta_curr);
+
+% Compute unbalanced force due to reciprocating mass and eccentric mass
+    unbalanced_force_rec = mass_rec * radius * omega^2 * (cos_theta + cos_theta / r_cr);
+    unbalanced_force_ecc = eccentric_mass * eccentric_distance * omega^2 * cos(theta_curr);
+    unbalanced_force(theta_idx) = unbalanced_force_rec + unbalanced_force_ecc;
+   
+ 
+       % Compute speed without flywheel
+   speed_no_flywheel(i) = omega * (1 + cos_theta / r_cr);
    
     % Compute speed with flywheel
-    angular_accel = unbalanced_force(theta_idx) * radius / (mass_rot * radius^2 + flywheel_inertia);
+   angular_accel = unbalanced_force(theta_idx) * radius / (mass_rot * radius^2 + flywheel_inertia);
     if i > 1
         speed_with_flywheel(i) = speed_with_flywheel(i-1) + angular_accel * t_step;
     else
         speed_with_flywheel(i) = omega;
     end
+end
+
+%% Plot results
+figure;
+subplot(2, 1, 1);
+plot(time, speed_no_flywheel, time, speed_with_flywheel);
+title('Engine Speed');
+xlabel('Time (s)');
+ylabel('Speed (rad/s)');
+legend('Without Flywheel', 'With Flywheel');
+subplot(2, 1, 2);
+plot(theta, unbalanced_force);
+title('Unbalanced Force');
+xlabel('Crank Angle (rad)');
+ylabel('Force (N)');
 end
 
 %% Plot results
