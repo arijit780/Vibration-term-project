@@ -250,10 +250,10 @@ for i = 1:length(time)
    
  
        % Compute speed without flywheel
-   speed_no_flywheel(i) = omega * (1 + cos_theta / r_cr);
+    speed_no_flywheel(i) = omega * (1 + cos_theta / r_cr);
    
     % Compute speed with flywheel
-   angular_accel = unbalanced_force(theta_idx) * radius / (mass_rot * radius^2 + flywheel_inertia);
+    angular_accel = unbalanced_force(theta_idx) * radius / (mass_rot * radius^2 + flywheel_inertia);
     if i > 1
         speed_with_flywheel(i) = speed_with_flywheel(i-1) + angular_accel * t_step;
     else
